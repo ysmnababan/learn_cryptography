@@ -110,3 +110,29 @@ B → Compute hash of received message → Verify signature using public key.
 - So the server request the CA to sign its certification which contains the domain info, public key and any related data. 
   When the client receives it, it can see that the key is not tampered and own by the actual server.
 - So the CA acts like 'This public key is indeed issued by the example.com. So you can use it safely'. 
+
+
+## Cipher Suite
+- A cipher suite is a set of algorithm used for securing communications between client and server
+- When a client want to communicates with server over HTTPS, they have to agree on how to secure the communication.
+- Typically defines 4 things: exchange key method, authentication method, encryption algorithm, hashing algorithm
+- `Exchange method` is how the client and server exchange the symmetric key for the message encryption.
+- `Authentication method` is not for users authentication. This is happen to make sure that the public key received 
+  from server is controlled by the authorized server. Client send a random number during initial tls handshake.
+  The server also send the random number to the client. After client receiving the CA and the public key, server
+  sends a payload containing both random number that has been sign using the server private key. Client receives this
+  and validates the sign using the previously sent server's public key. If it is match, that the server must be in
+  control for the public key previously sent to the client. This is how authentication works in principle.
+- `Encryption algorithm` is the algorithm to encrypt the message after both sides have the same symmetric key
+- `Hashing algorithm` is algorithm to create hashing and ensure data integrity.
+- Example of cipher suite:
+```
+    TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+    TLS → protocol
+    ECDHE → key exchange (forward secrecy)
+    RSA → authentication method
+    AES_128_GCM → encryption algorithm (AES in GCM mode, 128-bit key)
+    SHA256 → hashing algorithm for integrity
+```
+- There are many cipher suites out there. It has been defined by an organization so you can choose what do you want to use.
+- Both client and server also have to agree on what kind of cipher do they use.
