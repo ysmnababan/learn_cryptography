@@ -67,8 +67,32 @@ This project provide explanation and implementation of forward secrecy technique
 ```
 
 ### Diffie-Hellman
+- DH (Diffie-Hellman) is a cryptography algorithm for exchanging key - using prime number and modulo - 
+  without transmitting each private key.
+- Look at this algorithm
+  `a` => client private key
+  `b` => server private key
+  `g` => generator modulo `n`, usually small number  (public)
+  `n` => very big prime number (public)
+```mermaid
+   sequenceDiagram
+   Client->>Server: Sends (g^a)mod n 
+   Note over Server: Server can calculate ((g^a)^b)mod n
+   Server->>Client: Sends (g^b)mod n
+   Note over Client: Client can calculate ((g^b)^a)mod n
+   Note over Client,Server: Both have the same key 🔒
+```
+- Due to module property, `((g^a)^b)mod n` is equal to `((g^b)^a)mod n`
+- This value is used as key for encryption later on
+- Using exponential and modulo operation is like a 'color-mixing' scenario.
+  It is very difficult to extract or to know the exact value before mixing.
+- Even if attacker sniffing the transmission, it is mathematically difficult
+  to know the exact `a` and `b` because of discrete logarithm problem somehow
+  'combines' those value with `g` and `n`. Attacker have to do brute force
+  to know the exact private key which is very difficult and time consuming
+- This ensure the exchange of each private key without transmitting  it directly
 
-### Why use Forward Secrecy
+
 
 ### TLS 1.3
 
