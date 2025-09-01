@@ -65,6 +65,7 @@ This project provide explanation and implementation of forward secrecy technique
     Server->>Client: Finished 
     Note over Client,Server: Secure communication begins 🔒
 ```
+---
 
 ### Diffie-Hellman
 - DH (Diffie-Hellman) is a cryptography algorithm for exchanging key - using prime number and modulo - 
@@ -91,6 +92,7 @@ This project provide explanation and implementation of forward secrecy technique
   'combines' those value with `g` and `n`. Attacker have to do brute force
   to know the exact private key which is very difficult and time consuming
 - This ensure the exchange of each private key without transmitting  it directly
+---
 
 ### Why use Forward Secrecy
 - In older setup of TLS (such as TLS without forward secrecy), there is a risk
@@ -114,7 +116,7 @@ This project provide explanation and implementation of forward secrecy technique
   For each newly generated keys, the client must ensure that the key is legitimate
   and belongs to the server. Instead, we can use DH to generate ephemeral key
   for each session. It is faster to generate and has smaller handshake messages.
-
+---
 
 ### TLS 1.3
 - TLS 1.3 is the latest version of TLS protocol, designed to improve both **security** and **performance** compared to TLS 1.2.  
@@ -152,7 +154,30 @@ sequenceDiagram
     Client->>Server: [Finished]
     Note over Client,Server: Secure communication begins 🔒
 ```
+---
+
+### TLS 1.2 RSA vs TLS 1.2 ECDHE (Forward Secrecy)
+
+| Step | TLS 1.2 RSA (No FS) | TLS 1.2 ECDHE (With FS) |
+|------|---------------------|--------------------------|
+| 1 | **ClientHello** (supported ciphers, random) | **ClientHello** (supported ciphers, random) |
+| 2 | **ServerHello** (chosen cipher, random) | **ServerHello** (chosen cipher, random) |
+| 3 | **Certificate** (server public key) | **Certificate** (server public key) |
+| 4 | – | **ServerKeyExchange** (ephemeral DH params signed with server’s private key) |
+| 5 | **ServerHelloDone** | **ServerHelloDone** |
+| 6 | **ClientKeyExchange** (Premaster Secret encrypted with server’s RSA public key) | **ClientKeyExchange** (client’s ephemeral DH public key) |
+| 7 | Both compute **Master Secret** from Premaster + randoms | Both compute **Master Secret** using DH shared secret + randoms |
+| 8 | [ChangeCipherSpec] + Finished (client) | [ChangeCipherSpec] + Finished (client) |
+| 9 | [ChangeCipherSpec] + Finished (server) | [ChangeCipherSpec] + Finished (server) |
+| 🔒 | Encrypted communication begins | Encrypted communication begins |
+
+#### Key Difference
+- **RSA key exchange (no FS):** If the server’s long-term private key is compromised later, the attacker can decrypt previously recorded sessions.  
+- **ECDHE key exchange (FS):** Each session uses unique ephemeral keys. Even if the long-term private key is leaked, past sessions remain secure.  
+---
 
 ## Implementation
 
 ## Result
+
+
