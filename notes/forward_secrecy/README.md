@@ -92,9 +92,31 @@ This project provide explanation and implementation of forward secrecy technique
   to know the exact private key which is very difficult and time consuming
 - This ensure the exchange of each private key without transmitting  it directly
 
+### Why use Forward Secrecy
+- In older setup of TLS (such as TLS without forward secrecy), there is a risk
+  if an attacker record the https traffic.
+- Assume that there is an attacker that capture all the data transmitted over
+  a HTTPS. Although it is encrypted using the TLS 1.2, the attacker can still
+  record it even though they can't understand it.
+- If somehow the private key is compromised (maybe a couple month later),
+  the attacker can still decrypt the recorded information and finally all the 
+  data is leaked. 
+- One of the reason of private key leakage is `Heartbleed` attack that you can
+  read [here](/demo/heartbleed/README.md).
+- Forward secrecy is a security practice for ensuring even if the private key is 
+  exposed, the attacker still can't read the previous message because the session
+  keys are ephemeral (new ones for every session). 
+- This is implemented using `ephemeral Diffie-Hellman` algorithm.
+- Long term private/public is not for encryption, but only for authentication.
+- So the session keys is generated each time new session is created.
+- But why FS has something to do with the DH? Can we generate new private key
+  for each session? Technically yes, but it is not a very good approach. 
+  For each newly generated keys, the client must ensure that the key is legitimate
+  and belongs to the server. Instead, we can use DH to generate ephemeral key
+  for each session. It is faster to generate and has smaller handshake messages.
 
 
-### TLS 1.3
+### TLS 1.3 (and TLS 1.2 with FS)
 
 
 ## Implementation
