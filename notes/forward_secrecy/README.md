@@ -116,8 +116,42 @@ This project provide explanation and implementation of forward secrecy technique
   for each session. It is faster to generate and has smaller handshake messages.
 
 
-### TLS 1.3 (and TLS 1.2 with FS)
+### TLS 1.3
+- TLS 1.3 is the latest version of TLS protocol, designed to improve both **security** and **performance** compared to TLS 1.2.  
+- Key improvements:
+  - Forward Secrecy is **mandatory** (all cipher suites use ephemeral Diffie-Hellman).  
+  - Fewer round trips (1-RTT vs 2-RTT in TLS 1.2).  
+  - Legacy/weak algorithms (like RSA key exchange, SHA-1, etc.) removed.  
+  - Simplified handshake with fewer steps.  
 
+#### TLS 1.3 Handshake Process
+1. **ClientHello**  
+   - Client sends supported cipher suites, key share (ephemeral Diffie-Hellman public key), and extensions.  
+
+2. **ServerHello**  
+   - Server selects cipher suite, sends its own ephemeral DH public key, and server certificate (signed by CA).  
+   - Server proves ownership of the certificate using its long-term private key (signature).  
+
+3. **Key Exchange & Shared Secret**  
+   - Both client and server compute the shared secret using their ephemeral DH keys.  
+   - This guarantees Forward Secrecy (unique keys per session).  
+
+4. **Finished (Client and Server)**  
+   - Both sides derive traffic keys and send a “Finished” message encrypted with the new keys.  
+   - At this point, both confirm they derived the same session keys.  
+
+After this, secure communication begins.  
+Optionally, TLS 1.3 supports **0-RTT** for faster reconnections (at the cost of weaker replay protection).  
+
+```mermaid
+sequenceDiagram
+    Client->>Server: ClientHello (supported ciphers, key share, random, extensions)
+    Server-->>Client: ServerHello (chosen cipher, key share, random)
+    Server-->>Client: Certificate + CertificateVerify
+    Server-->>Client: [Finished]
+    Client->>Server: [Finished]
+    Note over Client,Server: Secure communication begins 🔒
+```
 
 ## Implementation
 
