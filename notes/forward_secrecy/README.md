@@ -177,7 +177,52 @@ sequenceDiagram
 ---
 
 ## Implementation
+- The implementation of the FS is quite simple because it is not the feature of the application layer.
+  The TLS is a layer below the Application Layer but above the Transport Layer. So it can achieve by
+  configuring the config when making connections so it uses the cipher suites that has FS capability. 
+  This is can be done by manually configure the config in TLS 1.2. For TLS 1.3, the FS is already enforced
+  by default, so you dont have to configure it yourself.
+- Generate the private key
+```bash
+# Key considerations for algorithm "RSA" ≥ 2048-bit
+openssl genrsa -out server.key 2048
+    
+# Key considerations for algorithm "ECDSA" ≥ secp384r1
+# List ECDSA the supported curves (openssl ecparam -list_curves)
+openssl ecparam -genkey -name secp384r1 -out server.key
+```
+- Generation of self-signed(x509) public key (PEM-encodings .pem|.crt) based on the private (.key)
+```bash
+openssl req -new -x509 -sha256 -key server.key -out server.pem -days 3650
+```
+- Configure the FS by defining the tls version and its cipher suites
+```go
+TLSConfig: &tls.Config{
+			MinVersion: tls.VersionTLS12,
+			MaxVersion: tls.VersionTLS13,
+			CipherSuites: []uint16{
+				// DONT USE THIS, RC4 BROKEN, 3DES WEAK
+				// tls.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA,
+				// tls.TLS_ECDHE_RSA_WITH_RC4_128_SHA,
+				// tls.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,
 
+				// DONT USE THIS, CBC MODES VULNERABLE TO PADDING-ORACLE ATTACKS
+				// tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+				// tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+				// tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+				// tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+				// tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
+				// tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
+
+				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+				tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
+			},
+		},
+```
 ## Result
 
 
