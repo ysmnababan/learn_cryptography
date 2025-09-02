@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -12,8 +13,7 @@ import (
 
 var (
 	mode = flag.String("mode", "server", "server or client")
-	// addr = flag.String("addr", "127.0.0.1:4444", "listen/dial address")
-	// safe = flag.Bool("safe", false, "server: enable bounds checking (the fix)")
+	safe = flag.Bool("safe", true, "server: enable bounds checking (the fix)")
 )
 
 func main() {
@@ -23,8 +23,9 @@ func main() {
 	case "server":
 		runServer(":443")
 	case "client":
+		setupClient(":443", *safe)
 	default:
-
+		return
 	}
 }
 
@@ -74,61 +75,42 @@ func runServer(addr string) {
 	}
 }
 
-func tlsVersionToString(v uint16) string {
-	switch v {
-	case tls.VersionTLS10:
-		return "TLS 1.0"
-	case tls.VersionTLS11:
-		return "TLS 1.1"
-	case tls.VersionTLS12:
-		return "TLS 1.2"
-	case tls.VersionTLS13:
-		return "TLS 1.3"
-	default:
-		return fmt.Sprintf("Unknown (0x%x)", v)
+func setupClient(addr string, isFS bool) {
+	conf := tls.Config{
+		InsecureSkipVerify: true, // this for testing only, delete this for production
 	}
-}
+	if isFS {
+		conf.CipherSuites = []uint16{
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+		}
+	} else {
+		conf.CipherSuites = []uint16{
+			tls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
+		}
+		conf.MaxVersion = tls.VersionTLS12
+	}
+	conn, err := tls.Dial("tcp", "127.0.0.1"+addr, &conf)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+	req := "GET /hello HTTP/1.1\r\n" +
+		"Host: localhost\r\n" +
+		"Connection: close\r\n" +
+		"\r\n"
+	n, err := conn.Write([]byte(req))
+	if err != nil {
+		log.Println(n, err)
+		return
+	}
 
-func cipherSuiteToString(cs uint16) string {
-	switch cs {
-	case tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA:
-		return "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA"
-	case tls.TLS_ECDHE_ECDSA_WITH_RC4_128_SHA:
-		return "TLS_ECDHE_ECDSA_WITH_RC4_128_SHA"
-	case tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA:
-		return "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA"
-	case tls.TLS_ECDHE_RSA_WITH_RC4_128_SHA:
-		return "TLS_ECDHE_RSA_WITH_RC4_128_SHA"
-	case tls.TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA:
-		return "TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA"
-	case tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA:
-		return "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA"
-	case tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA:
-		return "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA"
-	case tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256:
-		return "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256"
-	case tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256:
-		return "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256"
-	case tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256:
-		return "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
-	case tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256:
-		return "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256"
-	case tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384:
-		return "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
-	case tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384:
-		return "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"
-	case tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256:
-		return "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256"
-	case tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256:
-		return "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256"
-	// TLS 1.3 cipher suites.
-	case 0x1301:
-		return "TLS_AES_128_GCM_SHA256"
-	case 0x1302:
-		return "TLS_AES_256_GCM_SHA384"
-	case 0x1303:
-		return "TLS_CHACHA20_POLY1305_SHA256"
-	default:
-		return fmt.Sprintf("Unknown (0x%x)", cs)
+	buf := make([]byte, 400)
+	n, err = conn.Read(buf)
+	if err != nil {
+		log.Println(n, err)
 	}
+
+	println(string(buf[:n]))
 }
