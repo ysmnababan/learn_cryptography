@@ -223,6 +223,42 @@ TLSConfig: &tls.Config{
 			},
 		},
 ```
+- Run the server first using this command
+```go
+go run . -mode=server
+```
+- Run the client with FS flag on and off
+```go
+go run . -mode=client -safe=true  // FS enabled
+go run . -mode=client -safe=false // client doesn't have FS enabled
+```
+- The `safe=true` flag will make a successful connection to the server,
+  showing some message and the version of the TLS.
+```bash
+HTTP/1.1 200 OK
+Content-Type: text/html; charset=UTF-8
+Date: Tue, 02 Sep 2025 05:47:03 GMT
+Content-Length: 138
+Connection: close
+
+
+<h1>Welcome to Echo!</h1>
+<h3>TLS certificates automatically installed from Let's Encrypt :)</h3>
+<p>TLS_AES_128_GCM_SHA256 : TLS 1.3</p>
+```
+- The `safe=false` flag will produce error because TLS handshake is not
+  eligible due to different cipher suite that the client and server have.
+  Server only serve FS-able cipher but on the other hand, client doesn't
+  have that capability. It will show error something like this
+```bash
+# error from server
+2025/09/02 12:37:11 http: TLS handshake error from 127.0.0.1:53895: tls: no cipher suite supported by both client and server
+
+# error from client
+2025/09/02 12:37:11 remote error: tls: handshake failure
+exit status 1
+```
 ## Result
-
-
+- Forward Secrecy can be implemented easily by configuring the TLS version
+  and cipher suites.
+- The configuration can be done in the API itself or server proxy (if exist).
