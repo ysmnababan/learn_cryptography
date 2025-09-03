@@ -184,3 +184,42 @@ sequenceDiagram
     Agent-->>App: App uses cert/key for TLS
     Note over App,PKI: For symmetric/asymmetric keys:<br/>App sends encrypt/decrypt/sign requests to Vault Transit engine<br/>Vault never releases raw master key
 ```
+---
+## 8. Summary
+How KMS Relates to Key Rotation:
+1. **Centralized Key Management**
+
+   * KMS acts as the **single source of truth** for encryption keys, secrets, and credentials.
+   * Instead of embedding secrets in apps or config files, applications fetch them from KMS at runtime.
+
+2. **Automatic Rotation**
+
+   * Most KMS tools support **policy-driven rotation** (e.g., rotate every 90 days).
+   * Example: AWS KMS auto-rotates CMKs every 1 year by default; Vault can rotate DB credentials daily or even per-request.
+   * This eliminates human error and enforces compliance.
+
+3. **Ephemeral / Short-Lived Credentials**
+
+   * KMS can **issue temporary credentials** (e.g., DB password valid for 1 hour, TLS cert valid for 90 days).
+   * Rotation pattern becomes **built-in**, because secrets expire naturally.
+
+4. **Versioned Keys (Key ID / Alias)**
+
+   * KMS stores multiple versions of a key.
+   * During rotation, **new versions are activated** while old ones remain available for a grace period.
+   * Applications can still decrypt older data until the old version is retired.
+
+5. **Seamless Integration with Apps**
+
+   * Applications don’t manage rotation logic directly. They simply request `getSecret("dbpass")`.
+   * KMS decides whether that’s version 3 or version 10.
+   * This makes the **rotation process transparent** to developers.
+
+---
+
+✅ **Summary:**
+KMS systems like Vault, AWS KMS, GCP KMS, and Azure Key Vault don’t just store keys — they **automate rotation**, issue **short-lived credentials**, support **key versioning**, and make secret usage **transparent** to applications. This reduces manual work, minimizes exposure, and ensures compliance.
+
+---
+## 9. Implementation
+See the demo [here](/notes/key_rotation_pattern/demo/README.md)
