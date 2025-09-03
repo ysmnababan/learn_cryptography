@@ -86,16 +86,26 @@
 
 ---
 
-## 6. Example for rotation Policy
+## 6. Key / Secret Rotation Policy (Best Practices)
 
-| **Key / Secret**                       | **Needs Rotation?** | **Best Practice**                   | **Auto or Manual**           |
-| -------------------------------------- | ------------------- | ----------------------------------- | ---------------------------- |
-| `jwt.secret` (JWT signing key)         | Yes                 | Rotate every 60–90 days or on event | Manual (graceful transition) |
-| `dbpass` (each database)               | Yes                 | Frequent rotation                   | Automatic via secrets tools  |
-| `appkey`, `appsecret`, etc.            | Yes                 | Rotate frequently                   | Automatic if supported       |
-| `redis.password`                       | Yes                 | Rotate frequently                   | Automatic if supported       |
-| `accesskeyid`, `secretkeyid` (storage) | Yes                 | Frequent rotation                   | Automatic if supported       |
-| `server`, `port`, `env`, etc.          | No                  | Not sensitive                       | N/A                          |
+| **Key / Secret**                                                     | **Needs Rotation?** | **Recommended Rotation Policy**                                                                               | **Auto or Manual**                  |
+| -------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| `jwt.secret` (JWT signing key / HMAC)                                | ✅ Yes               | Every **60–90 days** or immediately on incident (compromise / leakage). Grace period to support old+new keys. | Manual (with key ID + rollover)     |
+| `jwt.private/public key` (RSA/ECDSA)                                 | ✅ Yes               | Every **6–12 months** or on event. Use key ID (`kid`) header for smooth transition.                           | Manual / Semi-auto (via KMS/HSM)    |
+| `dbpass` (database user passwords)                                   | ✅ Yes               | **30–90 days** (depends on criticality).                                                                      | Automatic (via Vault / AWS RDS)     |
+| `appkey`, `appsecret`, `client_id`, `client_secret`                  | ✅ Yes               | **30–90 days**; shorter for high-risk services.                                                               | Automatic if provider supports      |
+| `redis.password` / `memcached SASL`                                  | ✅ Yes               | **30–90 days**                                                                                                | Automatic if supported              |
+| `access_key_id` / `secret_access_key` (cloud storage, AWS/GCP/Azure) | ✅ Yes               | **90 days max** (AWS IAM best practice). Rotate more often if exposed externally.                             | Automatic (IAM, STS, Vault)         |
+| `tls/https certificates`                                             | ✅ Yes               | **90 days** (Let’s Encrypt default) or up to 1 year (org CAs). Prefer short-lived certs.                      | Automatic (Certbot, ACME, etc.)     |
+| `ssh key pairs` (server access)                                      | ✅ Yes               | **6–12 months**, or immediately on employee departure. Use ephemeral keys for CI/CD.                          | Manual / Semi-auto (via Vault)      |
+| `api tokens` (third-party integrations)                              | ✅ Yes               | Follow provider limits (often **30–90 days**). If long-lived, rotate manually every quarter.                  | Manual / Auto (depends on provider) |
+| `k8s service account tokens`                                         | ✅ Yes               | Use **short-lived tokens** (<= 1 day). Rotate automatically via Kubernetes token projection.                  | Automatic                           |
+| `k8s secrets`                                                        | ✅ Yes               | Treat same as app secrets → **30–90 days**.                                                                   | Automatic (with External Secrets)   |
+| `gpg/pgp keys` (code signing, backups)                               | ✅ Yes               | **12–24 months**, shorter for critical signing keys.                                                          | Manual                              |
+| `encryption keys` (AES, symmetric keys)                              | ✅ Yes               | Rotate every **6–12 months** or after **N encryptions** (per compliance). Use key versioning.                 | Automatic (KMS/HSM)                 |
+| `master keys` (root encryption keys in KMS)                          | ✅ Yes               | **Annual rotation** (AWS KMS default is yearly).                                                              | Automatic (KMS handles rotation)    |
+| `oauth refresh tokens`                                               | ⚠️ Sometimes        | Only if long-lived (e.g., >90 days). Prefer short expiry with re-issuance flow.                               | Manual (depends on provider)        |
+| `env vars` like `server`, `port`, `env`                              | ❌ No                | Not sensitive, rotation not needed.                                                                           | N/A                                 |
 
 
 --- 
