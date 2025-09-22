@@ -34,25 +34,25 @@
      |                             |                               |
 +----v----+                  +-----v-----+                   +-----v-----+
 | Service |                  |  Service  |                   |  Service  |
-|  A      |<--mTLS/ACLs---->|    B      |<--mTLS/ACLs------>|    C      |
+|  A      |<-------mTLS----->|    B      |<-------mTLS------>|    C      |
 | (API)   |                  | (AuthZ)   |                   | (Worker)  |
 +----+----+                  +-----+-----+                   +-----+-----+
      |                              |                               |
-     | OPA/Envoy ExtAuthZ           | JWT/Policy                    |
+     | OPA                          | JWT/Policy                    |
      |                               \                              |
      |                                \                             |
      |                                 v                            |
      |                         +--------------+                     |
      |                         |  OPA Agent   |<---- Rego Policies  |
      |                         +--------------+                     |
-     |                                                             |
-     |                         +--------------+                    |
-     +-----------------------> |  HashiCorp   |  <--- PKI/Secrets  |
-                               |   Vault      |                    |
-                               +-------+------+                    |
-                                       |                           |
-                                       | Dynamic DB creds / TLS    |
-                                       v                           v
+     |                                                              |
+     |                         +--------------+                     |
+     +-----------------------> |  HashiCorp   |  <--- PKI/Secrets   |
+                               |   Vault      |                     |
+                               +-------+------+                     |
+                                       |                            |
+                                       | Dynamic DB creds / TLS     |
+                                       v                            v
                                +--------------+            +---------------+
                                |   Database   |            |  External API |
                                |  (Postgres)  |            |   Providers   |
@@ -272,5 +272,10 @@ sequenceDiagram
 * **Use Istio** if you want **mTLS + service mesh features** and don’t want to touch app code.
 * **Use SPIFFE/SPIRE** if you want **portable, standard identity (SPIFFE IDs)** with automatic cert rotation but not a full mesh.
 * **Use Vault PKI** if you already use Vault for secrets and want a **flexible PKI authority**, but you’ll need to handle certificate reloads in apps.
+
+You can see the simple demo for mTLs [here](https://github.com/ysmnababan/learn_cryptography/tree/master/notes/zero_trust_policy/manual-mTLS).
+The implementation only cover manual mTLS. 
+For the `Vault PKI` or the `Istio` implementation is not needed for now because this mTLS approach
+is only helpful for more complex and distributed service. The demo will be updated whenever the system is changing toward distributed approach.
 
 ---
